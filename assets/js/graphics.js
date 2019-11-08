@@ -69,38 +69,6 @@
 				return new THREE.Vector3(vector1.x + vector2.x, vector1.y + vector2.y, vector1.z + vector2.z);	
 			},
 			
-			getSharedVertices: function(geometry1, geometry2) {
-
-				let result = new THREE.Geometry();
-				geometry1.vertices.forEach(function(geometry1Vertex) {
-					
-					geometry2.vertices.forEach(function(geometry2Vertex) {
-						
-						if (utils.roundHundreths(geometry1Vertex.x) === utils.roundHundreths(geometry2Vertex.x) && 
-							utils.roundHundreths(geometry1Vertex.y) === utils.roundHundreths(geometry2Vertex.y) &&
-							utils.roundHundreths(geometry1Vertex.z) === utils.roundHundreths(geometry2Vertex.z))
-						{
-							result.vertices.push(geometry2Vertex);
-						}
-					});
-				});
-	
-				return result;
-			},
-
-			getHighestVertex: function(geometry) {
-			
-				let self = this;
-				let highest = new THREE.Vector3();
-				geometry.vertices.forEach(function(vertex) {
-					if (vertex.y > highest.y) {
-						highest = vertex;
-					}
-				});
-				
-				return new THREE.Vector3(highest.x, highest.y, highest.z);
-			},
-			
 			sortVerticesClockwise: function(geometry) {
 			
 				let self = this;
@@ -127,70 +95,6 @@
 				sorted.vertices.sort((a, b) => a.angle - b.angle);
 				
 				return sorted;
-			},
-			
-			pointInPolygon: function(pt, geometry) {
-				
-				let raycaster = new THREE.Raycaster();
-				let testPoint = new THREE.Vector3(10, 0, -50);
-				let rayDirection = gfx.createVector(pt, testPoint);
-				raycaster.set(pt, rayDirection);
-				
-				geometry = gfx.sortVerticesClockwise(geometry.clone());
-				
-				geometry.vertices.forEach(function(vertex, i) {
-				//	gfx.drawLine(vertex, utils.next(geometry.vertices, vertex));
-				});
-				
-				gfx.showPoint(geometry.vertices[2], new THREE.Color('white'));
-				gfx.showPoint(utils.next(geometry.vertices, geometry.vertices[2]), new THREE.Color('white'));
-				//gfx.drawLine(geometry.vertices[2], utils.next(geometry.vertices, geometry.vertices[2]));
-				
-				let intersects = gfx.rayIntersectsLineSegment(raycaster, geometry.vertices[2], utils.next(geometry.vertices, geometry.vertices[2]));
-				console.log(intersects);
-				
-				gfx.drawLine(pt, gfx.movePoint(pt, raycaster.ray.direction));
-			},
-			
-			//not working yet
-			rayIntersectsLineSegment: function(raycaster, pt1, pt2) {
-				
-				raycaster.linePrecision = 3;
-				
-				var lineGeometry = new THREE.BufferGeometry();
-				let points = [];
-				points.push( pt1.x, pt1.y, pt1.z )
-				points.push( pt2.x, pt2.y, pt2.z )
-				lineGeometry.addAttribute( 'position', new THREE.Float32BufferAttribute( points, 3 ) );
-				
-				let object = new THREE.LineSegments(lineGeometry);
-				//scene.add(lineMesh);
-				return raycaster.intersectObject(object);
-				
-				
-				// let rayVector = gfx.createVector(ray.origin, gfx.movePoint(ray.origin, ray.direction));
-				// //gfx.showVector(rayVector, ray.origin, new THREE.Color('purple'));
-				
-				// let V1 = gfx.createVector(pt1, ray.origin);
-				// let V2 = gfx.createVector(pt1, pt2);
-				// let V3 = ray.direction.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI/2);
-				
-				// gfx.showPoint(ray.origin);
-				
-				// let rayLine = gfx.createLine(ray.origin, gfx.movePoint(ray.origin, ray.direction));
-				// let line = gfx.createLine(pt1, pt2);
-				// let intersectionPoint = gfx.intersection(rayLine, line);
-				// gfx.showPoint(intersectionPoint);
-				
-				// let t1 = gfx.getMagnitude(V2.clone().cross(V1)) / V2.dot(V3);
-				// let t2 = V1.dot(V3) / V2.dot(V3);
-				
-				// console.log(t1);
-				// console.log(t2);
-				
-				// //let int2 = gfx.movePoint(ray.origin, 
-				
-				// return (t1 >= 0 && t2 >= 0 && t2 <= 1);
 			},
 			
 			createLine: function(pt1, pt2) {
@@ -235,83 +139,6 @@
 				result.crossVectors(segment1, segment2);
 	
 				return result.y > 0;
-			},
-
-			rotatePointAboutLine: function(pt, axisPt1, axisPt2, angle) {
-			
-				let self = this;
-				
-				// uncomment to visualize endpoints of rotation axis
-				// self.showPoint(axisPt1, new THREE.Color('red'));
-				// self.showPoint(axisPt2, new THREE.Color('red'));
-				
-				let u = new THREE.Vector3(0, 0, 0), rotation1 = new THREE.Vector3(0, 0, 0), rotation2 = new THREE.Vector3(0, 0, 0);
-				let d = 0.0;
-				
-				// Move rotation axis to origin
-				rotation1.x = pt.x - axisPt1.x;
-				rotation1.y = pt.y - axisPt1.y;
-				rotation1.z = pt.z - axisPt1.z;
-			 
-				// Get unit vector equivalent to rotation axis
-				u.x = axisPt2.x - axisPt1.x;
-				u.y = axisPt2.y - axisPt1.y;
-				u.z = axisPt2.z - axisPt1.z;
-				u.normalize();
-				d = Math.sqrt(u.y*u.y + u.z*u.z);
-				
-				// Rotation onto first plane
-				if (d != 0) {
-				   rotation2.x = rotation1.x;
-				   rotation2.y = rotation1.y * u.z / d - rotation1.z * u.y / d;
-				   rotation2.z = rotation1.y * u.y / d + rotation1.z * u.z / d;
-				}
-				else {
-				   rotation2 = rotation1;
-				}
-				
-				// Rotation rotation onto second plane
-				rotation1.x = rotation2.x * d - rotation2.z * u.x;
-				rotation1.y = rotation2.y;
-				rotation1.z = rotation2.x * u.x + rotation2.z * d;
-				
-				// Oriented to axis, now perform original rotation
-				rotation2.x = rotation1.x * Math.cos(angle) - rotation1.y * Math.sin(angle);
-				rotation2.y = rotation1.x * Math.sin(angle) + rotation1.y * Math.cos(angle);
-				rotation2.z = rotation1.z;
-			 
-				// Undo rotation 1
-				rotation1.x =   rotation2.x * d + rotation2.z * u.x;
-				rotation1.y =   rotation2.y;
-				rotation1.z = - rotation2.x * u.x + rotation2.z * d;
-			 
-				// Undo rotation 2
-				if (d != 0) {
-				   rotation2.x =   rotation1.x;
-				   rotation2.y =   rotation1.y * u.z / d + rotation1.z * u.y / d;
-				   rotation2.z = - rotation1.y * u.y / d + rotation1.z * u.z / d;
-				}
-				else {
-				   rotation2 = rotation1;
-				}
-			 
-				// Move back into place
-				rotation1.x = rotation2.x + axisPt1.x;
-				rotation1.y = rotation2.y + axisPt1.y;
-				rotation1.z = rotation2.z + axisPt1.z;
-	
-				return rotation1;
-			},
-
-			rotateGeometryAboutLine: function(geometry, axisPt1, axisPt2, angle) {
-			
-				let self = this;
-				
-				for (let i = 0; i < geometry.vertices.length; i++) {
-					geometry.vertices[i].set(gfx.rotatePointAboutLine(geometry.vertices[i], axisPt1, axisPt2, angle).x, gfx.rotatePointAboutLine(geometry.vertices[i], axisPt1, axisPt2, angle).y, gfx.rotatePointAboutLine(geometry.vertices[i], axisPt1, axisPt2, angle).z );
-				}
-				
-				return geometry;
 			},
 
 			setUpScene: function() {

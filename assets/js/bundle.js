@@ -17,21 +17,8 @@ module.exports = function () {
   var greenMaterial = new THREE.MeshBasicMaterial({
     color: green
   });
-  var polygon = new THREE.Geometry(),
-      polygonMesh;
-  var arrows = [];
-  var faceGraph = [];
   var mouse = new THREE.Vector2();
   var stats = new Stats();
-  var wireframeMaterial = new THREE.MeshBasicMaterial({
-    wireframe: true,
-    color: 0x08CDFA
-  });
-  var adding = false;
-  var arrowHelper;
-  var previousArrowPoint;
-  var bounds = {};
-  var infiniteFaceMesh;
   return {
     settings: {
       defaultCameraLocation: {
@@ -50,8 +37,7 @@ module.exports = function () {
       zBuffer: .1
     },
     init: function init() {
-      var self = this;
-      self.loadFont();
+      var self = this; //self.loadFont();
     },
     begin: function begin() {
       var self = this;
@@ -63,7 +49,7 @@ module.exports = function () {
       gfx.resizeRendererOnWindowResize(renderer, camera);
       gfx.setUpLights();
       gfx.setCameraLocation(camera, self.settings.defaultCameraLocation);
-      self.setUpButtons();
+      self.setUpButtons(); //self.vectorField();
 
       var animate = function animate() {
         requestAnimationFrame(animate);
@@ -72,6 +58,214 @@ module.exports = function () {
       };
 
       animate();
+    },
+    vectorField: function vectorField() {
+      var windowHalfX = window.innerWidth / 2;
+      var windowHalfY = window.innerHeight / 2;
+      var particleMaterial; //an example particle material to use
+
+      var t = 0; //increases each call of render
+
+      var pause = false;
+      init();
+      animate();
+
+      function computePoints(x, y) {
+        //outputs vector based on vectorformula
+        return [eval(vectorFormula[0]), eval(vectorFormula[1])];
+      }
+
+      function init() {
+        var gui = new dat.GUI({
+          height: 5 * 32 - 1
+        });
+
+        var Params = function Params() {
+          this.x = 'Math.sin(t*10)+y';
+          this.y = 'Math.cos(t*10)-x';
+          this.width = 3;
+          this.height = 1;
+          this.offsetX = 2;
+          this.offsetY = -1;
+          this.wcs = 10;
+          this.hcs = 10;
+          this.speed = 4;
+
+          this.pause = function () {
+            pause = !pause;
+          };
+
+          this.restart = function () {
+            createStuff();
+          };
+        };
+
+        params = new Params();
+        gui.add(params, "x").name("X Equation").onFinishChange(function () {
+          createStuff();
+        });
+        gui.add(params, "y").name("Y Equation").onFinishChange(function () {
+          createStuff();
+        });
+        gui.add(params, "width").name("Width").onFinishChange(function () {
+          createStuff();
+        });
+        gui.add(params, "height").name("Height").onFinishChange(function () {
+          createStuff();
+        });
+        gui.add(params, "wcs").name("Width Cross Sections").onFinishChange(function () {
+          createStuff();
+        });
+        gui.add(params, "hcs").name("Height Cross Sections").onFinishChange(function () {
+          createStuff();
+        });
+        gui.add(params, "offsetX").name("Shape's X Offset").onFinishChange(function () {
+          createStuff();
+        });
+        gui.add(params, "offsetY").name("Shape's Y Offset").onFinishChange(function () {
+          createStuff();
+        });
+        gui.add(params, "speed").name("Slowness");
+        gui.add(params, "pause").name("Pause");
+        gui.add(params, "restart").name("Restart");
+        renderer = new THREE.WebGLRenderer({
+          antialias: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
+        camera.position.z = 10; //sets up camera
+
+        scene = new THREE.Scene(); //scene setup
+
+        t = 0;
+        var PI2 = Math.PI * 2;
+        var light = new THREE.AmbientLight(0x404040);
+        scene.add(light);
+        map = THREE.ImageUtils.loadTexture("arrowup.svg");
+        smaterial = new THREE.SpriteMaterial({
+          map: map,
+          color: 0xffffff
+        });
+        sprite = new THREE.Sprite(smaterial);
+        sprite.scale.divideScalar(2);
+        spriteGroup = new THREE.Object3D();
+        scene.add(spriteGroup);
+        renderer.setClearColor(0xededed);
+        createStuff();
+        setInterval(function () {
+          cube.material.color.offsetHSL(0.001, 0, 0);
+        }, 10);
+      }
+
+      function updateArrows() {
+        for (var i = 0; i < spriteGroup.children.length; i++) {
+          var sp = spriteGroup.children[i];
+          sp.rotation = -Math.atan2(xc, yc);
+          var x = sp.position.x;
+          var y = sp.position.y;
+          sp.material.rotation = -Math.atan2(eval(vectorFormula[0]), eval(vectorFormula[1]));
+        }
+      }
+
+      function addArrows() {
+        spriteGroup.children = [];
+
+        for (var x = -10; x <= 10; x += 0.5) {
+          for (var y = -10; y <= 10; y += 0.5) {
+            var addSprite = sprite.clone();
+            addSprite.position.x = x;
+            addSprite.position.y = y;
+            addSprite.material = smaterial.clone();
+            xc = eval(vectorFormula[0]);
+            yc = eval(vectorFormula[1]);
+            addSprite.material.rotation = -Math.atan2(xc, yc);
+            spriteGroup.add(addSprite);
+          }
+        }
+      }
+
+      function createStuff() {
+        t = 0;
+        vectorFormula[0] = params.x;
+        vectorFormula[1] = params.y;
+        scene.children = [];
+        scene.add(spriteGroup);
+        addArrows();
+        var w = params.width;
+        var h = params.height;
+        geometry = new THREE.BoxGeometry(w, h, 0, params.wcs, params.hcs, 0); //10 width and height segments, which means more shit in our geometry which means a better flow
+
+        material = new THREE.MeshBasicMaterial({
+          color: 0x03A678
+        });
+        cube = new THREE.Mesh(geometry, material);
+        cube.position.x += params.offsetX;
+        cube.position.y += params.offsetY;
+        scene.add(cube);
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        render();
+      }
+
+      function render() {
+        camera.lookAt(scene.position);
+
+        if (!pause) {
+          updateGeometryVertices();
+          t += 0.01;
+          updateArrows();
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      function updateGeometryVertices() {
+        for (var vindex in cube.geometry.vertices) {
+          var vertex = cube.geometry.vertices[vindex];
+          var offset = scene.localToWorld(vertex.clone()).add(cube.position); //this gets the vertex's position relative to the scene's origin, which is what we want
+
+          var movement = computePoints(offset.x, offset.y);
+          var movementVector = new THREE.Vector3(movement[0], movement[1], 0);
+          movementVector.divideScalar(params.speed); //we don't want it moving too quickly
+
+          vertex.add(movementVector); //moving the actual thing
+        }
+
+        cube.geometry.verticesNeedUpdate = true;
+      }
+
+      function boxGeo(width, height, hsections, wsections) {
+        var a = {
+          x: -width / 2,
+          y: -height / 2
+        };
+        var b = {
+          x: width / 2,
+          y: height / 2
+        };
+        var geometry = new THREE.Geometry();
+        geometry.vertices.push(new THREE.Vector3(a.x, a.y, 0));
+        geometry.vertices.push(new THREE.Vector3(b.x, a.y, 0));
+        geometry.vertices.push(new THREE.Vector3(b.x, b.y, 0));
+        geometry.vertices.push(new THREE.Vector3(a.x, b.y, 0));
+        geometry.faces.push(new THREE.Face3(0, 1, 2)); // counter-clockwise winding order
+
+        geometry.faces.push(new THREE.Face3(0, 2, 3));
+
+        for (var x = -width; x <= width; x += width / wsections) {
+          //now we'll add the little segments
+          for (var y = -height; y <= height; y += height / hsections) {
+            if ((Math.abs(y) == height || Math.abs(x) == width) && geometry.vertices.indexOf(new THREE.Vector3(x, y, 0)) == -1) //if we're on a border position
+              geometry.vertices.push(new THREE.Vector3(x, y, 0));
+          }
+        }
+
+        geometry.computeFaceNormals();
+        geometry.computeVertexNormals();
+        return geometry;
+      }
     },
     loadFont: function loadFont() {
       var self = this;
@@ -114,11 +308,7 @@ module.exports = function () {
       };
 
       window.addEventListener('mousemove', onMouseMove, false);
-      document.querySelector('canvas').addEventListener('click', function (event) {
-        if (adding) {
-          self.addArrow(event);
-        }
-      });
+      document.querySelector('canvas').addEventListener('click', function (event) {});
     }
   };
 };
@@ -182,27 +372,6 @@ module.exports = function () {
       addVectors: function addVectors(vector1, vector2) {
         return new THREE.Vector3(vector1.x + vector2.x, vector1.y + vector2.y, vector1.z + vector2.z);
       },
-      getSharedVertices: function getSharedVertices(geometry1, geometry2) {
-        var result = new THREE.Geometry();
-        geometry1.vertices.forEach(function (geometry1Vertex) {
-          geometry2.vertices.forEach(function (geometry2Vertex) {
-            if (utils.roundHundreths(geometry1Vertex.x) === utils.roundHundreths(geometry2Vertex.x) && utils.roundHundreths(geometry1Vertex.y) === utils.roundHundreths(geometry2Vertex.y) && utils.roundHundreths(geometry1Vertex.z) === utils.roundHundreths(geometry2Vertex.z)) {
-              result.vertices.push(geometry2Vertex);
-            }
-          });
-        });
-        return result;
-      },
-      getHighestVertex: function getHighestVertex(geometry) {
-        var self = this;
-        var highest = new THREE.Vector3();
-        geometry.vertices.forEach(function (vertex) {
-          if (vertex.y > highest.y) {
-            highest = vertex;
-          }
-        });
-        return new THREE.Vector3(highest.x, highest.y, highest.z);
-      },
       sortVerticesClockwise: function sortVerticesClockwise(geometry) {
         var self = this;
         var midpoint = new THREE.Vector3(0, 0, 0);
@@ -226,48 +395,6 @@ module.exports = function () {
           return a.angle - b.angle;
         });
         return sorted;
-      },
-      pointInPolygon: function pointInPolygon(pt, geometry) {
-        var raycaster = new THREE.Raycaster();
-        var testPoint = new THREE.Vector3(10, 0, -50);
-        var rayDirection = gfx.createVector(pt, testPoint);
-        raycaster.set(pt, rayDirection);
-        geometry = gfx.sortVerticesClockwise(geometry.clone());
-        geometry.vertices.forEach(function (vertex, i) {//	gfx.drawLine(vertex, utils.next(geometry.vertices, vertex));
-        });
-        gfx.showPoint(geometry.vertices[2], new THREE.Color('white'));
-        gfx.showPoint(utils.next(geometry.vertices, geometry.vertices[2]), new THREE.Color('white')); //gfx.drawLine(geometry.vertices[2], utils.next(geometry.vertices, geometry.vertices[2]));
-
-        var intersects = gfx.rayIntersectsLineSegment(raycaster, geometry.vertices[2], utils.next(geometry.vertices, geometry.vertices[2]));
-        console.log(intersects);
-        gfx.drawLine(pt, gfx.movePoint(pt, raycaster.ray.direction));
-      },
-      //not working yet
-      rayIntersectsLineSegment: function rayIntersectsLineSegment(raycaster, pt1, pt2) {
-        raycaster.linePrecision = 3;
-        var lineGeometry = new THREE.BufferGeometry();
-        var points = [];
-        points.push(pt1.x, pt1.y, pt1.z);
-        points.push(pt2.x, pt2.y, pt2.z);
-        lineGeometry.addAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-        var object = new THREE.LineSegments(lineGeometry); //scene.add(lineMesh);
-
-        return raycaster.intersectObject(object); // let rayVector = gfx.createVector(ray.origin, gfx.movePoint(ray.origin, ray.direction));
-        // //gfx.showVector(rayVector, ray.origin, new THREE.Color('purple'));
-        // let V1 = gfx.createVector(pt1, ray.origin);
-        // let V2 = gfx.createVector(pt1, pt2);
-        // let V3 = ray.direction.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI/2);
-        // gfx.showPoint(ray.origin);
-        // let rayLine = gfx.createLine(ray.origin, gfx.movePoint(ray.origin, ray.direction));
-        // let line = gfx.createLine(pt1, pt2);
-        // let intersectionPoint = gfx.intersection(rayLine, line);
-        // gfx.showPoint(intersectionPoint);
-        // let t1 = gfx.getMagnitude(V2.clone().cross(V1)) / V2.dot(V3);
-        // let t2 = V1.dot(V3) / V2.dot(V3);
-        // console.log(t1);
-        // console.log(t2);
-        // //let int2 = gfx.movePoint(ray.origin, 
-        // return (t1 >= 0 && t2 >= 0 && t2 <= 1);
       },
       createLine: function createLine(pt1, pt2) {
         var geometry = new THREE.Geometry();
@@ -304,70 +431,6 @@ module.exports = function () {
         var result = new THREE.Vector3();
         result.crossVectors(segment1, segment2);
         return result.y > 0;
-      },
-      rotatePointAboutLine: function rotatePointAboutLine(pt, axisPt1, axisPt2, angle) {
-        var self = this; // uncomment to visualize endpoints of rotation axis
-        // self.showPoint(axisPt1, new THREE.Color('red'));
-        // self.showPoint(axisPt2, new THREE.Color('red'));
-
-        var u = new THREE.Vector3(0, 0, 0),
-            rotation1 = new THREE.Vector3(0, 0, 0),
-            rotation2 = new THREE.Vector3(0, 0, 0);
-        var d = 0.0; // Move rotation axis to origin
-
-        rotation1.x = pt.x - axisPt1.x;
-        rotation1.y = pt.y - axisPt1.y;
-        rotation1.z = pt.z - axisPt1.z; // Get unit vector equivalent to rotation axis
-
-        u.x = axisPt2.x - axisPt1.x;
-        u.y = axisPt2.y - axisPt1.y;
-        u.z = axisPt2.z - axisPt1.z;
-        u.normalize();
-        d = Math.sqrt(u.y * u.y + u.z * u.z); // Rotation onto first plane
-
-        if (d != 0) {
-          rotation2.x = rotation1.x;
-          rotation2.y = rotation1.y * u.z / d - rotation1.z * u.y / d;
-          rotation2.z = rotation1.y * u.y / d + rotation1.z * u.z / d;
-        } else {
-          rotation2 = rotation1;
-        } // Rotation rotation onto second plane
-
-
-        rotation1.x = rotation2.x * d - rotation2.z * u.x;
-        rotation1.y = rotation2.y;
-        rotation1.z = rotation2.x * u.x + rotation2.z * d; // Oriented to axis, now perform original rotation
-
-        rotation2.x = rotation1.x * Math.cos(angle) - rotation1.y * Math.sin(angle);
-        rotation2.y = rotation1.x * Math.sin(angle) + rotation1.y * Math.cos(angle);
-        rotation2.z = rotation1.z; // Undo rotation 1
-
-        rotation1.x = rotation2.x * d + rotation2.z * u.x;
-        rotation1.y = rotation2.y;
-        rotation1.z = -rotation2.x * u.x + rotation2.z * d; // Undo rotation 2
-
-        if (d != 0) {
-          rotation2.x = rotation1.x;
-          rotation2.y = rotation1.y * u.z / d + rotation1.z * u.y / d;
-          rotation2.z = -rotation1.y * u.y / d + rotation1.z * u.z / d;
-        } else {
-          rotation2 = rotation1;
-        } // Move back into place
-
-
-        rotation1.x = rotation2.x + axisPt1.x;
-        rotation1.y = rotation2.y + axisPt1.y;
-        rotation1.z = rotation2.z + axisPt1.z;
-        return rotation1;
-      },
-      rotateGeometryAboutLine: function rotateGeometryAboutLine(geometry, axisPt1, axisPt2, angle) {
-        var self = this;
-
-        for (var i = 0; i < geometry.vertices.length; i++) {
-          geometry.vertices[i].set(gfx.rotatePointAboutLine(geometry.vertices[i], axisPt1, axisPt2, angle).x, gfx.rotatePointAboutLine(geometry.vertices[i], axisPt1, axisPt2, angle).y, gfx.rotatePointAboutLine(geometry.vertices[i], axisPt1, axisPt2, angle).z);
-        }
-
-        return geometry;
       },
       setUpScene: function setUpScene() {
         scene = new THREE.Scene();
