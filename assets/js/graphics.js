@@ -343,26 +343,8 @@
 				triangleGeometry.computeFaceNormals();
 				return triangleGeometry;
 			},
-
-			getCentroid3D: function(geometry) { // Calculating centroid of a tetrahedron: https://www.youtube.com/watch?v=Infxzuqd_F4
 			
-				let result = new THREE.Vector3();
-				let x = 0, y = 0, z = 0;
-				
-				for (let i = 0; i < geometry.vertices.length; i++) {
-					
-					x += geometry.vertices[i].x;
-					y += geometry.vertices[i].y;
-					z += geometry.vertices[i].z;
-				}
-				
-				result.x = x / 4;
-				result.y = y / 4;
-				result.z = z / 4;
-				return result;
-			},
-			
-			getCentroid2D: function(geometry) { // Calculating centroid of a tetrahedron: https://www.youtube.com/watch?v=Infxzuqd_F4
+			getCentroid: function(geometry) { 
 			
 				let result = new THREE.Vector3();
 				let x = 0, y = 0, z = 0;

@@ -1,6 +1,6 @@
-$textColor: red;
-$legendTextColor: red;
-$textBackground: rgba(255, 0, 0, .2);
+$textColor: #ccc;
+$legendTextColor: #ccc;
+$textBackground: rgba(255, 255, 255, .1);
 
 #message {
 	font-size: 22px;
@@ -17,6 +17,7 @@ $textBackground: rgba(255, 0, 0, .2);
 	bottom: 20px;
 	left: 20px;
 	color: $textColor;
+	opacity: .5;
 	
 	.legend-title {
 		font-size: 18px;

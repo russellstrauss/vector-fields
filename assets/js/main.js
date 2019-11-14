@@ -8,5 +8,4 @@ var Graphics = require('./graphics.js');
 
 		VectorField().init();
 	});
-	
 })();

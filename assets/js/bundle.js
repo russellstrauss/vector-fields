@@ -9,9 +9,7 @@ module.exports = function () {
       green = new THREE.Color(0x00ff00),
       red = new THREE.Color('#ED0000');
   var faceMaterial = new THREE.MeshBasicMaterial({
-    color: red,
-    transparent: true,
-    opacity: .2,
+    color: 0x00ff00,
     side: THREE.DoubleSide
   });
   var greenMaterial = new THREE.MeshBasicMaterial({
@@ -30,14 +28,15 @@ module.exports = function () {
       arrowHeadSize: 1.5,
       colors: {
         worldColor: black,
-        gridColor: new THREE.Color('#ED0000'),
+        gridColor: new THREE.Color('#111'),
         arrowColor: red
       },
       floorSize: 100,
       zBuffer: .1
     },
     init: function init() {
-      var self = this; //self.loadFont();
+      var self = this;
+      self.loadFont();
     },
     begin: function begin() {
       var self = this;
@@ -49,7 +48,8 @@ module.exports = function () {
       gfx.resizeRendererOnWindowResize(renderer, camera);
       gfx.setUpLights();
       gfx.setCameraLocation(camera, self.settings.defaultCameraLocation);
-      self.setUpButtons(); //self.vectorField();
+      self.setUpButtons();
+      self.vectorField();
 
       var animate = function animate() {
         requestAnimationFrame(animate);
@@ -60,212 +60,35 @@ module.exports = function () {
       animate();
     },
     vectorField: function vectorField() {
-      var windowHalfX = window.innerWidth / 2;
-      var windowHalfY = window.innerHeight / 2;
-      var particleMaterial; //an example particle material to use
-
-      var t = 0; //increases each call of render
-
-      var pause = false;
-      init();
-      animate();
-
-      function computePoints(x, y) {
-        //outputs vector based on vectorformula
-        return [eval(vectorFormula[0]), eval(vectorFormula[1])];
-      }
-
-      function init() {
-        var gui = new dat.GUI({
-          height: 5 * 32 - 1
-        });
-
-        var Params = function Params() {
-          this.x = 'Math.sin(t*10)+y';
-          this.y = 'Math.cos(t*10)-x';
-          this.width = 3;
-          this.height = 1;
-          this.offsetX = 2;
-          this.offsetY = -1;
-          this.wcs = 10;
-          this.hcs = 10;
-          this.speed = 4;
-
-          this.pause = function () {
-            pause = !pause;
-          };
-
-          this.restart = function () {
-            createStuff();
-          };
-        };
-
-        params = new Params();
-        gui.add(params, "x").name("X Equation").onFinishChange(function () {
-          createStuff();
-        });
-        gui.add(params, "y").name("Y Equation").onFinishChange(function () {
-          createStuff();
-        });
-        gui.add(params, "width").name("Width").onFinishChange(function () {
-          createStuff();
-        });
-        gui.add(params, "height").name("Height").onFinishChange(function () {
-          createStuff();
-        });
-        gui.add(params, "wcs").name("Width Cross Sections").onFinishChange(function () {
-          createStuff();
-        });
-        gui.add(params, "hcs").name("Height Cross Sections").onFinishChange(function () {
-          createStuff();
-        });
-        gui.add(params, "offsetX").name("Shape's X Offset").onFinishChange(function () {
-          createStuff();
-        });
-        gui.add(params, "offsetY").name("Shape's Y Offset").onFinishChange(function () {
-          createStuff();
-        });
-        gui.add(params, "speed").name("Slowness");
-        gui.add(params, "pause").name("Pause");
-        gui.add(params, "restart").name("Restart");
-        renderer = new THREE.WebGLRenderer({
-          antialias: true
-        });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
-        camera.position.z = 10; //sets up camera
-
-        scene = new THREE.Scene(); //scene setup
-
-        t = 0;
-        var PI2 = Math.PI * 2;
-        var light = new THREE.AmbientLight(0x404040);
-        scene.add(light);
-        map = THREE.ImageUtils.loadTexture("arrowup.svg");
-        smaterial = new THREE.SpriteMaterial({
-          map: map,
-          color: 0xffffff
-        });
-        sprite = new THREE.Sprite(smaterial);
-        sprite.scale.divideScalar(2);
-        spriteGroup = new THREE.Object3D();
-        scene.add(spriteGroup);
-        renderer.setClearColor(0xededed);
-        createStuff();
-        setInterval(function () {
-          cube.material.color.offsetHSL(0.001, 0, 0);
-        }, 10);
-      }
-
-      function updateArrows() {
-        for (var i = 0; i < spriteGroup.children.length; i++) {
-          var sp = spriteGroup.children[i];
-          sp.rotation = -Math.atan2(xc, yc);
-          var x = sp.position.x;
-          var y = sp.position.y;
-          sp.material.rotation = -Math.atan2(eval(vectorFormula[0]), eval(vectorFormula[1]));
-        }
-      }
-
-      function addArrows() {
-        spriteGroup.children = [];
-
-        for (var x = -10; x <= 10; x += 0.5) {
-          for (var y = -10; y <= 10; y += 0.5) {
-            var addSprite = sprite.clone();
-            addSprite.position.x = x;
-            addSprite.position.y = y;
-            addSprite.material = smaterial.clone();
-            xc = eval(vectorFormula[0]);
-            yc = eval(vectorFormula[1]);
-            addSprite.material.rotation = -Math.atan2(xc, yc);
-            spriteGroup.add(addSprite);
-          }
-        }
-      }
-
-      function createStuff() {
-        t = 0;
-        vectorFormula[0] = params.x;
-        vectorFormula[1] = params.y;
-        scene.children = [];
-        scene.add(spriteGroup);
-        addArrows();
-        var w = params.width;
-        var h = params.height;
-        geometry = new THREE.BoxGeometry(w, h, 0, params.wcs, params.hcs, 0); //10 width and height segments, which means more shit in our geometry which means a better flow
-
-        material = new THREE.MeshBasicMaterial({
-          color: 0x03A678
-        });
-        cube = new THREE.Mesh(geometry, material);
-        cube.position.x += params.offsetX;
-        cube.position.y += params.offsetY;
-        scene.add(cube);
-      }
-
-      function animate() {
-        requestAnimationFrame(animate);
-        render();
-      }
-
-      function render() {
-        camera.lookAt(scene.position);
-
-        if (!pause) {
-          updateGeometryVertices();
-          t += 0.01;
-          updateArrows();
-        }
-
-        renderer.render(scene, camera);
-      }
-
-      function updateGeometryVertices() {
-        for (var vindex in cube.geometry.vertices) {
-          var vertex = cube.geometry.vertices[vindex];
-          var offset = scene.localToWorld(vertex.clone()).add(cube.position); //this gets the vertex's position relative to the scene's origin, which is what we want
-
-          var movement = computePoints(offset.x, offset.y);
-          var movementVector = new THREE.Vector3(movement[0], movement[1], 0);
-          movementVector.divideScalar(params.speed); //we don't want it moving too quickly
-
-          vertex.add(movementVector); //moving the actual thing
-        }
-
-        cube.geometry.verticesNeedUpdate = true;
-      }
-
-      function boxGeo(width, height, hsections, wsections) {
-        var a = {
-          x: -width / 2,
-          y: -height / 2
-        };
-        var b = {
-          x: width / 2,
-          y: height / 2
-        };
-        var geometry = new THREE.Geometry();
-        geometry.vertices.push(new THREE.Vector3(a.x, a.y, 0));
-        geometry.vertices.push(new THREE.Vector3(b.x, a.y, 0));
-        geometry.vertices.push(new THREE.Vector3(b.x, b.y, 0));
-        geometry.vertices.push(new THREE.Vector3(a.x, b.y, 0));
-        geometry.faces.push(new THREE.Face3(0, 1, 2)); // counter-clockwise winding order
-
-        geometry.faces.push(new THREE.Face3(0, 2, 3));
-
-        for (var x = -width; x <= width; x += width / wsections) {
-          //now we'll add the little segments
-          for (var y = -height; y <= height; y += height / hsections) {
-            if ((Math.abs(y) == height || Math.abs(x) == width) && geometry.vertices.indexOf(new THREE.Vector3(x, y, 0)) == -1) //if we're on a border position
-              geometry.vertices.push(new THREE.Vector3(x, y, 0));
-          }
-        }
-
-        geometry.computeFaceNormals();
-        geometry.computeVertexNormals();
-        return geometry;
-      }
+      //gfx.drawLine(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 10, 0), 0x00ff00);
+      var self = this;
+      var geometry = new THREE.Geometry();
+      geometry.vertices.push(new THREE.Vector3(5, self.settings.zBuffer, 10), new THREE.Vector3(-10, self.settings.zBuffer, 5), new THREE.Vector3(10, self.settings.zBuffer, 0));
+      geometry.faces.push(new THREE.Face3(0, 1, 2));
+      var geometry = new THREE.Geometry();
+      var v1 = new THREE.Vector3(5, self.settings.zBuffer, 10);
+      var v2 = new THREE.Vector3(-10, self.settings.zBuffer, 5);
+      var v3 = new THREE.Vector3(10, self.settings.zBuffer, 0);
+      var Va = new THREE.Vector3(6, 0, 10);
+      var Vb = new THREE.Vector3(-3, 0, 4);
+      var Vc = new THREE.Vector3(5, 0, 6);
+      var triangle = new THREE.Triangle(v1, v2, v3);
+      triangle.Va = Va;
+      triangle.Vb = Vb;
+      triangle.Vc = Vc;
+      var normal = new THREE.Vector3(0, 0, 0);
+      normal = triangle.getNormal(normal);
+      geometry.vertices.push(triangle.a);
+      geometry.vertices.push(triangle.b);
+      geometry.vertices.push(triangle.c);
+      geometry.faces.push(new THREE.Face3(0, 1, 2, normal));
+      gfx.showVector(triangle.Va, triangle.a);
+      gfx.showVector(triangle.Vb, triangle.b);
+      gfx.showVector(triangle.Vc, triangle.c);
+      var mesh = new THREE.Mesh(geometry, faceMaterial);
+      scene.add(mesh);
+      var A = new THREE.Vector3();
+      gfx.showVector(triangle.getBarycoord(gfx.getCentroid(geometry), A), gfx.getCentroid(geometry));
     },
     loadFont: function loadFont() {
       var self = this;
@@ -289,18 +112,6 @@ module.exports = function () {
       var message = document.getElementById('message');
       var esc = 27;
       var A = 65;
-      document.addEventListener('keydown', function (event) {
-        if (event.keyCode === A) {
-          adding = true;
-          controls.enabled = false;
-        }
-      });
-      document.addEventListener('keyup', function (event) {
-        if (event.keyCode === A) {
-          adding = false;
-          controls.enabled = true;
-        }
-      });
 
       var onMouseMove = function onMouseMove(event) {
         mouse.x = event.clientX / window.innerWidth * 2 - 1;
@@ -615,26 +426,7 @@ module.exports = function () {
         triangleGeometry.computeFaceNormals();
         return triangleGeometry;
       },
-      getCentroid3D: function getCentroid3D(geometry) {
-        // Calculating centroid of a tetrahedron: https://www.youtube.com/watch?v=Infxzuqd_F4
-        var result = new THREE.Vector3();
-        var x = 0,
-            y = 0,
-            z = 0;
-
-        for (var i = 0; i < geometry.vertices.length; i++) {
-          x += geometry.vertices[i].x;
-          y += geometry.vertices[i].y;
-          z += geometry.vertices[i].z;
-        }
-
-        result.x = x / 4;
-        result.y = y / 4;
-        result.z = z / 4;
-        return result;
-      },
-      getCentroid2D: function getCentroid2D(geometry) {
-        // Calculating centroid of a tetrahedron: https://www.youtube.com/watch?v=Infxzuqd_F4
+      getCentroid: function getCentroid(geometry) {
         var result = new THREE.Vector3();
         var x = 0,
             y = 0,
