@@ -46,7 +46,7 @@ module.exports = function() {
 			gfx.setUpLights();
 			gfx.setCameraLocation(camera, self.settings.defaultCameraLocation);
 			self.setUpButtons();
-			self.vectorField();
+			self.displayGeometries();
 			
 			var animate = function() {
 
@@ -58,9 +58,8 @@ module.exports = function() {
 			animate(); 
 		},
 		
-		vectorField: function() {
+		displayGeometries: function() {
 			
-			//gfx.drawLine(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 10, 0), 0x00ff00);
 			let self = this;
 			
 			var geometry = new THREE.Geometry();
@@ -71,16 +70,15 @@ module.exports = function() {
 			);
 			geometry.faces.push(new THREE.Face3( 0, 1, 2 ));
 			
-			
 			var geometry = new THREE.Geometry();
-			var v1 = new THREE.Vector3(5,  self.settings.zBuffer, 10);
-			var v2 = new THREE.Vector3(-10, self.settings.zBuffer, 5);
-			var v3 = new THREE.Vector3(10, self.settings.zBuffer, 0);
+			var a = new THREE.Vector3(5,  self.settings.zBuffer, 10);
+			var b = new THREE.Vector3(-10, self.settings.zBuffer, 5);
+			var c = new THREE.Vector3(10, self.settings.zBuffer, 0);
 			var Va = new THREE.Vector3(6, 0, 10);
 			var Vb = new THREE.Vector3(-3, 0, 4);
 			var Vc = new THREE.Vector3(5, 0, 6);
 
-			var triangle = new THREE.Triangle(v1, v2, v3);
+			var triangle = new THREE.Triangle(a, b, c);
 			triangle.Va = Va;
 			triangle.Vb = Vb;
 			triangle.Vc = Vc;
@@ -91,16 +89,74 @@ module.exports = function() {
 			geometry.vertices.push(triangle.c);
 			geometry.faces.push( new THREE.Face3( 0, 1, 2, normal ) );
 			
-			gfx.showVector(triangle.Va, triangle.a);
-			gfx.showVector(triangle.Vb, triangle.b);
-			gfx.showVector(triangle.Vc, triangle.c);
+			// gfx.showVector(triangle.Va, triangle.a);
+			// gfx.showVector(triangle.Vb, triangle.b);
+			// gfx.showVector(triangle.Vc, triangle.c);
 			
-			let mesh = new THREE.Mesh(geometry, faceMaterial);
-			scene.add(mesh);
+			// let mesh = new THREE.Mesh(geometry, faceMaterial);
+			// scene.add(mesh);
 			
-			let A = new THREE.Vector3();
-			gfx.showVector(triangle.getBarycoord(gfx.getCentroid(geometry), A), gfx.getCentroid(geometry));
+			// var P = gfx.movePoint(triangle.a, new THREE.Vector3(-1, 0, -2));
+			// gfx.showPoint(gfx.movePoint(P, new THREE.Vector3(0, .5, 0)));
+			// let bary = new THREE.Vector3(0, 0, 0);
+			// bary = triangle.getBarycoord(P, bary);
+			// console.log(bary.x);
+			// let baryLabel = 'Bary(' + bary.x.toFixed(1).toString() + ', ' + bary.y.toFixed(1).toString() + ', ' + bary.z.toFixed(1).toString() + ')';
+			// gfx.labelPoint(gfx.movePoint(P, new THREE.Vector3(1, .5, 0)), baryLabel, 0x0000ff);
 			
+			// gfx.labelPoint(gfx.movePoint(triangle.a, new THREE.Vector3(1, 0, 0)), 'A(' + triangle.a.x.toString() + ', ' + triangle.a.y.toString() + ', ' + triangle.a.z.toString() + ')');
+			// gfx.labelPoint(gfx.movePoint(triangle.b, new THREE.Vector3(-8, 0, 0)), 'B(' + triangle.b.x.toString() + ', ' + triangle.b.y.toString() + ', ' + triangle.b.z.toString() + ')');
+			// gfx.labelPoint(gfx.movePoint(triangle.c, new THREE.Vector3(.5, 0, 0)), 'C(' + triangle.c.x.toString() + ', ' + triangle.c.y.toString() + ', ' + triangle.c.z.toString() + ')');
+			// gfx.labelPoint(gfx.movePoint(P, new THREE.Vector3(0, 1, -.75)), 'P');
+			
+			// gfx.labelPoint(gfx.movePoint(triangle.a, Va).multiplyScalar(1.05), 'Va');
+			// gfx.labelPoint(gfx.movePoint(triangle.b, Vb).multiplyScalar(1.2), 'Vb');
+			//gfx.labelPoint(gfx.movePoint(triangle.c, Vc).multiplyScalar(1.05), 'Vc');
+			
+			self.pointCloud();
+		},
+		
+		pointCloud: function() {
+			
+			let self = this;
+			let y = self.settings.zBuffer;
+			
+			let range = [-10, 10];
+			let density = 2;
+			
+			for (let x = range[0]; x <= range[1]; x += density) {
+				
+				for (let y = 0; y <= range[1] * 2; y += density) {
+
+					for (let z = range[0]; z <= range[1]; z += density) {
+						
+						let vectorOrigin = new THREE.Vector3(x, y, z);
+						let origin = new THREE.Vector3(0, 0, 0);
+						gfx.showPoint(origin, 0x00ff00);
+						gfx.labelPoint(gfx.movePoint(origin, new THREE.Vector3(.25, 0, -.25)), 'O', 0x00ff00);
+						//gfx.showPoint(vectorOrigin, 0x0000ff);
+						
+						gfx.showVector(self.vectorInField(vectorOrigin), vectorOrigin);
+					}
+				}
+				
+			}
+		},
+		
+		vectorInField: function(pt) {
+			
+			//field F = (−y, xy, z);
+			//let result = new THREE.Vector3(-pt.y, pt.x * pt.y, pt.z);
+			
+			// field F = xi
+			//let result = new THREE.Vector3(pt.x, 0, 0);
+			
+			// field F = xi + zk
+			//let result =  new THREE.Vector3(pt.x + pt.z, 0, pt.x + pt.z);
+			
+			// field F = -zi + xk
+			let result =  new THREE.Vector3(-pt.z, 0, pt.x);
+			return result;
 		},
 		
 		loadFont: function() {

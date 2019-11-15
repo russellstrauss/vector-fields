@@ -17,7 +17,7 @@
 					enable: true,
 					fontStyle: {
 						font: null,
-						size: 2,
+						size: .75,
 						height: 0,
 						curveSegments: 1
 					}
@@ -193,10 +193,15 @@
 			},
 
 			showVector: function(vector, origin, color) {
-			
-				color = color || 0xff0000;
-				let arrowHelper = new THREE.ArrowHelper(vector, origin, vector.length(), color);
-				scene.add(arrowHelper);
+				
+				if (vector.length() > 0) {
+					color = color || 0xff0000;
+					let arrowHelper = new THREE.ArrowHelper(vector, origin, vector.length(), color);
+					scene.add(arrowHelper);
+				}
+				else {
+					gfx.showPoint(origin, color);
+				}
 			},
 
 			/* 	Inputs: pt - point in space to label, in the form of object with x, y, and z properties; label - text content for label; color - optional */
