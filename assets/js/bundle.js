@@ -17,6 +17,7 @@ module.exports = function () {
   });
   var mouse = new THREE.Vector2();
   var stats = new Stats();
+  var blue = 0x0000ff;
   return {
     settings: {
       defaultCameraLocation: {
@@ -65,13 +66,13 @@ module.exports = function () {
       geometry.vertices.push(new THREE.Vector3(5, self.settings.zBuffer, 10), new THREE.Vector3(-10, self.settings.zBuffer, 5), new THREE.Vector3(10, self.settings.zBuffer, 0));
       geometry.faces.push(new THREE.Face3(0, 1, 2));
       var geometry = new THREE.Geometry();
-      var a = new THREE.Vector3(5, self.settings.zBuffer, 10);
-      var b = new THREE.Vector3(-10, self.settings.zBuffer, 5);
-      var c = new THREE.Vector3(10, self.settings.zBuffer, 0);
+      var A = new THREE.Vector3(5, self.settings.zBuffer, 10);
+      var B = new THREE.Vector3(-10, self.settings.zBuffer, 5);
+      var C = new THREE.Vector3(10, self.settings.zBuffer, 0);
       var Va = new THREE.Vector3(6, 0, 10);
-      var Vb = new THREE.Vector3(-3, 0, 4);
+      var Vb = new THREE.Vector3(-3, 0, -20);
       var Vc = new THREE.Vector3(5, 0, 6);
-      var triangle = new THREE.Triangle(a, b, c);
+      var triangle = new THREE.Triangle(A, B, C);
       triangle.Va = Va;
       triangle.Vb = Vb;
       triangle.Vc = Vc;
@@ -80,27 +81,31 @@ module.exports = function () {
       geometry.vertices.push(triangle.a);
       geometry.vertices.push(triangle.b);
       geometry.vertices.push(triangle.c);
-      geometry.faces.push(new THREE.Face3(0, 1, 2, normal)); // gfx.showVector(triangle.Va, triangle.a);
-      // gfx.showVector(triangle.Vb, triangle.b);
-      // gfx.showVector(triangle.Vc, triangle.c);
-      // let mesh = new THREE.Mesh(geometry, faceMaterial);
-      // scene.add(mesh);
-      // var P = gfx.movePoint(triangle.a, new THREE.Vector3(-1, 0, -2));
-      // gfx.showPoint(gfx.movePoint(P, new THREE.Vector3(0, .5, 0)));
-      // let bary = new THREE.Vector3(0, 0, 0);
-      // bary = triangle.getBarycoord(P, bary);
-      // console.log(bary.x);
-      // let baryLabel = 'Bary(' + bary.x.toFixed(1).toString() + ', ' + bary.y.toFixed(1).toString() + ', ' + bary.z.toFixed(1).toString() + ')';
-      // gfx.labelPoint(gfx.movePoint(P, new THREE.Vector3(1, .5, 0)), baryLabel, 0x0000ff);
-      // gfx.labelPoint(gfx.movePoint(triangle.a, new THREE.Vector3(1, 0, 0)), 'A(' + triangle.a.x.toString() + ', ' + triangle.a.y.toString() + ', ' + triangle.a.z.toString() + ')');
-      // gfx.labelPoint(gfx.movePoint(triangle.b, new THREE.Vector3(-8, 0, 0)), 'B(' + triangle.b.x.toString() + ', ' + triangle.b.y.toString() + ', ' + triangle.b.z.toString() + ')');
-      // gfx.labelPoint(gfx.movePoint(triangle.c, new THREE.Vector3(.5, 0, 0)), 'C(' + triangle.c.x.toString() + ', ' + triangle.c.y.toString() + ', ' + triangle.c.z.toString() + ')');
-      // gfx.labelPoint(gfx.movePoint(P, new THREE.Vector3(0, 1, -.75)), 'P');
-      // gfx.labelPoint(gfx.movePoint(triangle.a, Va).multiplyScalar(1.05), 'Va');
-      // gfx.labelPoint(gfx.movePoint(triangle.b, Vb).multiplyScalar(1.2), 'Vb');
-      //gfx.labelPoint(gfx.movePoint(triangle.c, Vc).multiplyScalar(1.05), 'Vc');
+      geometry.faces.push(new THREE.Face3(0, 1, 2, normal));
+      gfx.showVector(triangle.Va, triangle.a);
+      gfx.showVector(triangle.Vb, triangle.b);
+      gfx.showVector(triangle.Vc, triangle.c);
+      var mesh = new THREE.Mesh(geometry, faceMaterial);
+      scene.add(mesh);
+      var center = gfx.getCentroid(geometry);
+      var P = gfx.movePoint(A, new THREE.Vector3(0, 0, 0));
+      gfx.showPoint(gfx.movePoint(P, new THREE.Vector3(0, .01, 0)));
+      var bary = new THREE.Vector3(0, 0, 0);
+      bary = triangle.getBarycoord(P, bary);
+      var baryLabel = 'Bary(' + bary.x.toFixed(1).toString() + ', ' + bary.y.toFixed(1).toString() + ', ' + bary.z.toFixed(1).toString() + ')'; //gfx.labelPoint(gfx.movePoint(P, new THREE.Vector3(1, .5, 0)), baryLabel, 0x0000ff);
 
-      self.pointCloud();
+      gfx.labelPoint(gfx.movePoint(triangle.a, new THREE.Vector3(1, 0, 0)), 'A(' + triangle.a.x.toString() + ', ' + triangle.a.y.toString() + ', ' + triangle.a.z.toString() + ')');
+      gfx.labelPoint(gfx.movePoint(triangle.b, new THREE.Vector3(-8, 0, 0)), 'B(' + triangle.b.x.toString() + ', ' + triangle.b.y.toString() + ', ' + triangle.b.z.toString() + ')');
+      gfx.labelPoint(gfx.movePoint(triangle.c, new THREE.Vector3(.5, 0, 0)), 'C(' + triangle.c.x.toString() + ', ' + triangle.c.y.toString() + ', ' + triangle.c.z.toString() + ')');
+      gfx.labelPoint(gfx.movePoint(P, new THREE.Vector3(0, 1, -.75)), 'P');
+      gfx.labelPoint(gfx.movePoint(triangle.a, Va).multiplyScalar(1.05), 'Va');
+      gfx.labelPoint(gfx.movePoint(triangle.b, Vb).multiplyScalar(1.1), 'Vb');
+      gfx.labelPoint(gfx.movePoint(triangle.c, Vc).multiplyScalar(1.05), 'Vc');
+      var Vp = gfx.addVectors(Va.clone().multiplyScalar(bary.x), Vb.clone().multiplyScalar(bary.x), Vc.clone().multiplyScalar(bary.x)); //gfx.showVector(Vp, P, blue);
+
+      gfx.showVector(Vp, P, blue);
+      console.log(Va);
+      console.log(bary); //self.pointCloud();
     },
     pointCloud: function pointCloud() {
       var self = this;
@@ -222,8 +227,9 @@ module.exports = function () {
       createVector: function createVector(pt1, pt2) {
         return new THREE.Vector3(pt2.x - pt1.x, pt2.y - pt1.y, pt2.z - pt1.z);
       },
-      addVectors: function addVectors(vector1, vector2) {
-        return new THREE.Vector3(vector1.x + vector2.x, vector1.y + vector2.y, vector1.z + vector2.z);
+      addVectors: function addVectors(vector1, vector2, vector3) {
+        vector3 = vector3 || new THREE.Vector3(0, 0, 0);
+        return new THREE.Vector3(vector1.x + vector2.x + vector3.x, vector1.y + vector2.y + vector3.y, vector1.z + vector2.z + vector3.z);
       },
       sortVerticesClockwise: function sortVerticesClockwise(geometry) {
         var self = this;

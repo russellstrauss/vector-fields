@@ -65,8 +65,9 @@
 				return new THREE.Vector3(pt2.x - pt1.x, pt2.y - pt1.y, pt2.z - pt1.z);
 			},
 			
-			addVectors(vector1, vector2) {
-				return new THREE.Vector3(vector1.x + vector2.x, vector1.y + vector2.y, vector1.z + vector2.z);	
+			addVectors(vector1, vector2, vector3) {
+				vector3 = vector3 || new THREE.Vector3(0, 0, 0);
+				return new THREE.Vector3(vector1.x + vector2.x + vector3.x, vector1.y + vector2.y + vector3.y, vector1.z + vector2.z + vector3.z);	
 			},
 			
 			sortVerticesClockwise: function(geometry) {
