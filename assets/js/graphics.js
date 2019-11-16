@@ -194,15 +194,16 @@
 			},
 
 			showVector: function(vector, origin, color) {
-				
+				let arrowHelper;
 				if (vector.length() > 0) {
 					color = color || 0xff0000;
-					let arrowHelper = new THREE.ArrowHelper(vector, origin, vector.length(), color);
+					arrowHelper = new THREE.ArrowHelper(vector, origin, vector.length(), color);
 					scene.add(arrowHelper);
 				}
 				else {
 					gfx.showPoint(origin, color);
 				}
+				return arrowHelper;
 			},
 
 			/* 	Inputs: pt - point in space to label, in the form of object with x, y, and z properties; label - text content for label; color - optional */
@@ -367,22 +368,44 @@
 				result.z = z / 3;
 				return result;
 			},
+			
+			pointInFace: function(pt, face) {
+				
+				let geometry = new THREE.Geometry();
+				let vertices = [face.a, face.b, face.c];
+				let angleSum = 0;
+				vertices.forEach(function(vertex) {
+					geometry.vertices.push(vertex);
+				});
+				
+				for (let i = 0; i < vertices.length; i++) {
+					angleSum += gfx.calculateAngle(geometry.vertices[i], pt, gfx.nextVertex(geometry.vertices[i], geometry));
+				}
+				
+				return angleSum === Math.PI * 2;
+			},
+			
+			nextVertex: function(currentVertex, geometry) {
+			
+				let vertexIndex = geometry.vertices.findIndex(function(element) {
+					return element === currentVertex;
+				});
+				return geometry.vertices[(vertexIndex + 1) % geometry.vertices.length];
+			},
 
 			getAngleBetweenVectors: function(vector1, vector2) {
 
 				let dot = vector1.dot(vector2);
 				let length1 = vector1.length();
 				let length2 = vector2.length();			
-				let angle = Math.acos(dot / (length1 * length2));
-				return angle;
+				return Math.acos(dot / (length1 * length2));
 			},
 			
-			calculateAngle(endpoint1, endpoint2, vertex) {
+			calculateAngle(endpoint1, vertex, endpoint2) {
 
 				let vector1 = new THREE.Vector3(endpoint1.x - vertex.x, endpoint1.y - vertex.y, endpoint1.z - vertex.z);
 				let vector2 = new THREE.Vector3(endpoint2.x - vertex.x, endpoint2.y - vertex.y, endpoint2.z - vertex.z);
-				let angle = vector1.angleTo(vector2);
-				return angle;
+				return vector1.angleTo(vector2);
 			}
 		}
 	})();
