@@ -101,8 +101,11 @@ module.exports = function () {
         var newPos = gfx.movePoint(vertices[i], triangle.constraints.vectors[i].setLength(triangle.constraints.vectors[i].length() - 1));
         triangle.constraints.dragHandles[i].position.set(newPos.x, newPos.y, newPos.z);
         scene.add(triangle.constraints.dragHandles[i]);
-        draggable.push(triangle.constraints.dragHandles[i]);
-        console.log(draggable.length);
+
+        if (draggable.length !== triangle.constraints.vectors.length) {
+          draggable.push(triangle.constraints.dragHandles[i]);
+          console.log(draggable.length);
+        }
       }
 
       var mesh = new THREE.Mesh(geometry, faceMaterial);
@@ -110,17 +113,18 @@ module.exports = function () {
       self.trianglePointCloud(triangle);
     },
     updateObjects: function updateObjects(draggedObject) {
-      var closest;
       var vertices = [triangle.a, triangle.b, triangle.c];
 
       for (var i = 0; i < triangle.constraints.vectors.length; i++) {
-        if (triangle.constraints.dragHandles[i] === draggedObject) {
-          console.log('match');
-        }
+        // Only update if draggedObject is the same as the corresponding drag handle. Something is delete and making new drag handles.
+        console.log(i, triangle.constraints.dragHandles[i] === draggedObject, triangle.constraints.dragHandles[i], draggedObject);
 
-        scene.remove(triangle.arrows[i]);
-        triangle.constraints.vectors[i] = new THREE.Vector3(dragDelta[1].x - vertices[i].x, dragDelta[1].y - vertices[i].y, dragDelta[1].z - vertices[i].z);
-        triangle.arrows[i] = gfx.showVector(triangle.constraints.vectors[i], vertices[i]);
+        if (i === 0) {
+          console.log('match');
+          scene.remove(triangle.arrows[0]);
+          triangle.constraints.vectors[0] = new THREE.Vector3(dragDelta[1].x - vertices[0].x, dragDelta[1].y - vertices[0].y, dragDelta[1].z - vertices[0].z);
+          triangle.arrows[0] = gfx.showVector(triangle.constraints.vectors[0], vertices[0]);
+        }
       }
     },
     barycentricVectorInField: function barycentricVectorInField(pt, triangle) {
@@ -206,7 +210,6 @@ module.exports = function () {
         if (!draggable.includes(obj)) scene.remove(obj);
       }
 
-      draggable = [];
       floor = gfx.addFloor(this.settings.floorSize, this.settings.colors.worldColor, this.settings.colors.gridColor);
     },
     loadFont: function loadFont() {
