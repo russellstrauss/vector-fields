@@ -4,6 +4,23 @@
 THREE.DragControls = require('three-dragcontrols');
 
 module.exports = function () {
+  var settings = {
+    defaultCameraLocation: {
+      x: 0,
+      y: 75,
+      z: 0
+    },
+    messageDuration: 2000,
+    arrowHeadSize: 1.5,
+    colors: {
+      worldColor: black,
+      gridColor: new THREE.Color('#111'),
+      arrowColor: red
+    },
+    floorSize: 100,
+    zBuffer: .1,
+    dragHandleSize: 3
+  };
   var renderer, scene, camera, controls, floor;
   var raycaster = new THREE.Raycaster();
   var black = new THREE.Color('black'),
@@ -15,7 +32,10 @@ module.exports = function () {
     side: THREE.DoubleSide,
     wireframe: true
   });
-  var invisibleMaterial = new THREE.MeshNormalMaterial();
+  var invisibleMaterial = new THREE.MeshNormalMaterial({
+    transparent: true,
+    opacity: 0
+  });
   var greenMaterial = new THREE.MeshBasicMaterial({
     color: green
   });
@@ -23,25 +43,10 @@ module.exports = function () {
   var stats = new Stats();
   var blue = 0x0000ff;
   var draggable = [],
-      dragHandleGeometry = new THREE.BoxGeometry(2, 2, 2);
+      dragHandleGeometry = new THREE.BoxGeometry(settings.dragHandleSize, settings.dragHandleSize, settings.dragHandleSize);
   var triangle, geometry;
+  var triangles = [];
   return {
-    settings: {
-      defaultCameraLocation: {
-        x: 0,
-        y: 75,
-        z: 0
-      },
-      messageDuration: 2000,
-      arrowHeadSize: 1.5,
-      colors: {
-        worldColor: black,
-        gridColor: new THREE.Color('#111'),
-        arrowColor: red
-      },
-      floorSize: 100,
-      zBuffer: .1
-    },
     init: function init() {
       var self = this;
       self.loadFont();
@@ -51,11 +56,11 @@ module.exports = function () {
       scene = gfx.setUpScene();
       renderer = gfx.setUpRenderer(renderer);
       camera = gfx.setUpCamera(camera);
-      floor = gfx.addFloor(this.settings.floorSize, this.settings.colors.worldColor, this.settings.colors.gridColor);
+      floor = gfx.addFloor(settings.floorSize, settings.colors.worldColor, settings.colors.gridColor);
       controls = gfx.enableControls(controls, renderer, camera);
       gfx.resizeRendererOnWindowResize(renderer, camera);
       gfx.setUpLights();
-      gfx.setCameraLocation(camera, self.settings.defaultCameraLocation);
+      gfx.setCameraLocation(camera, settings.defaultCameraLocation);
       self.setUpButtons();
       self.initTriangle();
       self.dragging();
@@ -70,42 +75,50 @@ module.exports = function () {
     },
     initTriangle: function initTriangle() {
       var self = this;
-      var A = new THREE.Vector3(5, self.settings.zBuffer, 10),
-          B = new THREE.Vector3(-10, self.settings.zBuffer, 5),
-          C = new THREE.Vector3(10, self.settings.zBuffer, 0);
+      var A = new THREE.Vector3(5, settings.zBuffer, 10),
+          B = new THREE.Vector3(-10, settings.zBuffer, 5),
+          C = new THREE.Vector3(10, settings.zBuffer, 1);
       var Va = new THREE.Vector3(2, 0, 5),
           Vb = new THREE.Vector3(-3, 0, -5),
           Vc = new THREE.Vector3(5, 0, 6);
-      triangle = new THREE.Triangle(A, B, C);
-      triangle.constraints = {};
-      triangle.constraints.vectors = [];
-      triangle.constraints.dragHandles = [];
-      triangle.constraints.vectors.push(Va);
-      triangle.constraints.vectors.push(Vb);
-      triangle.constraints.vectors.push(Vc);
-      geometry = new THREE.Geometry();
-      geometry.vertices.push(triangle.a);
-      geometry.vertices.push(triangle.b);
-      geometry.vertices.push(triangle.c);
-      geometry.faces.push(new THREE.Face3(0, 1, 2, triangle.getNormal(new THREE.Vector3(0, 0, 0))));
-      var mesh = new THREE.Mesh(geometry, faceMaterial);
-      scene.add(mesh);
-      triangle.arrows = [];
-      var label = ['A', 'B', 'C'];
-      var vertices = [triangle.a, triangle.b, triangle.c];
+      triangles.push(new THREE.Triangle(A, B, C));
+      A = new THREE.Vector3(10, settings.zBuffer, -20), B = new THREE.Vector3(-10, settings.zBuffer, 5), C = new THREE.Vector3(10, settings.zBuffer, 1);
+      triangles.push(new THREE.Triangle(A, B, C));
 
-      for (var i = 0; i < triangle.constraints.vectors.length; i++) {
-        if (!triangle.arrows[i]) triangle.arrows[i] = gfx.showVector(triangle.constraints.vectors[i], vertices[i], blue);
-        gfx.labelPoint(gfx.movePoint(vertices[i], triangle.constraints.vectors[i]).multiplyScalar(1.05), 'V' + label[i].toLowerCase(), blue);
-        gfx.labelPoint(gfx.movePoint(vertices[i], new THREE.Vector3(-.25, .5, 1)), label[i], 0x00ff00);
-        triangle.constraints.dragHandles[i] = new THREE.Mesh(dragHandleGeometry, invisibleMaterial);
-        var newPos = gfx.movePoint(vertices[i], triangle.constraints.vectors[i].setLength(triangle.constraints.vectors[i].length() - 1));
-        triangle.constraints.dragHandles[i].position.set(newPos.x, newPos.y, newPos.z);
-        scene.add(triangle.constraints.dragHandles[i]);
-        draggable.push(triangle.constraints.dragHandles[i]);
-      }
+      for (var tri = 0; tri < triangles.length; tri += 1) {
+        triangles[tri].constraints = {};
+        triangles[tri].constraints.vectors = [];
+        triangles[tri].constraints.dragHandles = [];
+        triangles[tri].constraints.vectors.push(Va);
+        triangles[tri].constraints.vectors.push(Vb);
+        triangles[tri].constraints.vectors.push(Vc);
+        triangles[tri].field = [];
+        triangles[tri].fieldDensity = 1;
+        geometry = new THREE.Geometry();
+        geometry.vertices.push(triangles[tri].a);
+        geometry.vertices.push(triangles[tri].b);
+        geometry.vertices.push(triangles[tri].c);
+        geometry.faces.push(new THREE.Face3(0, 1, 2, triangles[tri].getNormal(new THREE.Vector3(0, 0, 0))));
+        var mesh = new THREE.Mesh(geometry, faceMaterial);
+        scene.add(mesh);
+        triangles[tri].arrows = [];
+        var label = ['A', 'B', 'C'];
+        var vertices = [triangles[tri].a, triangles[tri].b, triangles[tri].c];
 
-      self.trianglePointCloud(triangle);
+        for (var i = 0; i < triangles[tri].constraints.vectors.length; i++) {
+          if (!triangles[tri].arrows[i]) triangles[tri].arrows[i] = gfx.showVector(triangles[tri].constraints.vectors[i], vertices[i], blue); // gfx.labelPoint(gfx.movePoint(vertices[i], triangles[tri].constraints.vectors[i]).multiplyScalar(1.05), 'V' + label[i].toLowerCase(), blue);
+          // gfx.labelPoint(gfx.movePoint(vertices[i], new THREE.Vector3(-.25, .5, 1)), label[i], 0x00ff00);
+
+          triangles[tri].constraints.dragHandles[i] = new THREE.Mesh(dragHandleGeometry, invisibleMaterial);
+          var newPos = gfx.movePoint(vertices[i], triangles[tri].constraints.vectors[i].setLength(triangles[tri].constraints.vectors[i].length() - 1));
+          triangles[tri].constraints.dragHandles[i].position.set(newPos.x, newPos.y, newPos.z);
+          scene.add(triangles[tri].constraints.dragHandles[i]);
+          draggable.push(triangles[tri].constraints.dragHandles[i]);
+        }
+
+        self.trianglePointCloud(triangles[tri]); //console.log('triangle passed to cloud: ', triangles[tri]);
+      } //self.trianglePointCloud(triangles[1]);
+
     },
     updateObjects: function updateObjects(draggedObject) {
       var self = this;
@@ -113,8 +126,14 @@ module.exports = function () {
 
       for (var i = 0; i < triangle.constraints.vectors.length; i++) {
         if (triangle.constraints.dragHandles[i] === draggedObject) {
-          triangle.constraints.vectors[i] = new THREE.Vector3(draggedObject.position.x - vertices[i].x, draggedObject.position.y - vertices[i].y, draggedObject.position.z - vertices[i].z);
-          gfx.updateArrow(triangle.arrows[i], vertices[i], draggedObject.position);
+          // update stuff when dragging handles
+          var originalLength = triangle.constraints.vectors[i].length();
+          triangle.constraints.vectors[i] = new THREE.Vector3(draggedObject.position.x - vertices[i].x, 0, draggedObject.position.z - vertices[i].z);
+          var newDirection = new THREE.Vector3(draggedObject.position.x, 0, draggedObject.position.z);
+          var newOrigin = new THREE.Vector3(vertices[i].x, 0, vertices[i].z);
+          gfx.updateArrow(triangle.arrows[i], newOrigin, newDirection);
+          var scale = newDirection.length() * .1;
+          triangle.constraints.dragHandles[i].scale.x = scale, triangle.constraints.dragHandles[i].scale.y = scale, triangle.constraints.dragHandles[i].scale.z = scale;
         }
       }
 
@@ -127,15 +146,12 @@ module.exports = function () {
     },
     dragging: function dragging() {
       var self = this;
-      var count = 0;
       var dragControls = new THREE.DragControls(draggable, camera, renderer.domElement);
       dragControls.addEventListener('dragstart', function (event) {
-        count = 0;
         controls.enabled = false;
       });
       dragControls.addEventListener('drag', function (event) {
         self.updateObjects(event.object);
-        count++;
       });
       dragControls.addEventListener('dragend', function (event) {
         controls.enabled = true;
@@ -145,19 +161,28 @@ module.exports = function () {
       var self = this;
       var y = triangle.b.y; // need to fix for 3D
 
-      var rangeX = [triangle.b.x, triangle.c.x];
-      var rangeZ = [triangle.c.z, triangle.a.z];
-      var density = 1;
-      var origin = new THREE.Vector3(0, 0, 0);
-      gfx.showPoint(origin, new THREE.Color('purple'));
-      triangle.field = [];
+      var density = triangle.fieldDensity;
+      var vertices = [triangle.a, triangle.b, triangle.c];
+      var minX = 0,
+          maxX = 0,
+          minZ = 0,
+          maxZ = 0;
+
+      for (var i = 0; i < vertices.length; i++) {
+        if (vertices[i].x < minX) minX = vertices[i].x;
+        if (vertices[i].x > maxX) maxX = vertices[i].x;
+        if (vertices[i].z < minZ) minZ = vertices[i].z;
+        if (vertices[i].z > maxZ) maxZ = vertices[i].z;
+      }
+
+      var rangeX = [minX, maxX];
+      var rangeZ = [minZ, maxZ];
 
       for (var x = rangeX[0]; x <= rangeX[1]; x += density) {
         for (var z = rangeZ[0]; z <= rangeZ[1]; z += density) {
           var vectorOrigin = new THREE.Vector3(x, y, z);
 
           if (gfx.pointInFace(vectorOrigin, triangle)) {
-            gfx.labelPoint(origin, 'O', new THREE.Color('purple'));
             triangle.field.push({
               'arrow': gfx.showVector(self.barycentricVectorInField(vectorOrigin, triangle), vectorOrigin),
               'origin': vectorOrigin
@@ -172,13 +197,14 @@ module.exports = function () {
 
       for (var i = 0; i < triangle.field.length; i++) {
         var origin = triangle.field[i].origin;
-        gfx.updateArrow(triangle.field[i].arrow, origin, self.barycentricVectorInField(origin, triangle));
+        var newDirection = gfx.movePoint(origin, self.barycentricVectorInField(origin, triangle));
+        gfx.updateArrow(triangle.field[i].arrow, origin, newDirection);
       }
     },
     pointCloud: function pointCloud() {
       var self = this;
-      var y = self.settings.zBuffer;
-      var range = [-self.settings.floorSize / 2, self.settings.floorSize / 2];
+      var y = settings.zBuffer;
+      var range = [-settings.floorSize / 2, settings.floorSize / 2];
       var density = 10;
 
       for (var x = range[0]; x <= range[1]; x += density) {
@@ -209,7 +235,7 @@ module.exports = function () {
       // 	let obj = scene.children[i];
       // 	if (!draggable.includes(obj)) scene.remove(obj);
       // }
-      floor = gfx.addFloor(this.settings.floorSize, this.settings.colors.worldColor, this.settings.colors.gridColor);
+      floor = gfx.addFloor(settings.floorSize, settings.colors.worldColor, settings.colors.gridColor);
     },
     loadFont: function loadFont() {
       var self = this;
@@ -240,9 +266,7 @@ module.exports = function () {
       };
 
       window.addEventListener('mousemove', onMouseMove, false);
-      document.querySelector('canvas').addEventListener('click', function (event) {
-        self.reset(); //self.updateField();
-      });
+      document.querySelector('canvas').addEventListener('click', function (event) {});
     }
   };
 };
