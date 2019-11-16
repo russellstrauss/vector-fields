@@ -128,11 +128,11 @@ module.exports = function() {
 				
 				// Only update if draggedObject is the same as the corresponding drag handle. Something is delete and making new drag handles.
 				console.log(i, triangle.constraints.dragHandles[i] === draggedObject, triangle.constraints.dragHandles[i], draggedObject);
-				if (i === 0) {
+				if (triangle.constraints.dragHandles[i] === draggedObject) {
 					console.log('match');
-					scene.remove(triangle.arrows[0]);
-					triangle.constraints.vectors[0] = new THREE.Vector3(dragDelta[1].x - vertices[0].x, dragDelta[1].y - vertices[0].y, dragDelta[1].z - vertices[0].z)
-					triangle.arrows[0] = gfx.showVector(triangle.constraints.vectors[0], vertices[0]);
+					scene.remove(triangle.arrows[i]);
+					triangle.constraints.vectors[i] = new THREE.Vector3(dragDelta[1].x - vertices[i].x, dragDelta[1].y - vertices[i].y, dragDelta[1].z - vertices[i].z)
+					triangle.arrows[i] = gfx.showVector(triangle.constraints.vectors[i], vertices[i]);
 				}
 				
 			}
@@ -160,8 +160,8 @@ module.exports = function() {
 				self.updateObjects(event.object);
 				
 				//if (count % 4 === 0) {
-					self.reset();
-					self.displayGeometries();
+				//	self.reset();
+				//	self.displayGeometries();
 				//}
 				count++;
 			});
@@ -237,13 +237,17 @@ module.exports = function() {
 			return result;
 		},
 		
+		update: function() {
+			
+		},
+		
 		reset: function() {
 			
-			for (let i = scene.children.length - 1; i >= 0; i--) {
-				let obj = scene.children[i];
+			// for (let i = scene.children.length - 1; i >= 0; i--) {
+			// 	let obj = scene.children[i];
 				
-				if (!draggable.includes(obj)) scene.remove(obj);
-			}
+			// 	if (!draggable.includes(obj)) scene.remove(obj);
+			// }
 			
 			floor = gfx.addFloor(this.settings.floorSize, this.settings.colors.worldColor, this.settings.colors.gridColor);
 		},
@@ -284,7 +288,8 @@ module.exports = function() {
 			window.addEventListener('mousemove', onMouseMove, false);
 			
 			document.querySelector('canvas').addEventListener('click', function(event) {
-				
+				self.reset();
+				//self.displayGeometries();
 			});
 		}
 	}
