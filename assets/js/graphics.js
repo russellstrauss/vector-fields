@@ -168,8 +168,6 @@
 
 			showPoints: function(geometry, color, opacity) {
 			
-				let self = this;
-				
 				for (let i = 0; i < geometry.vertices.length; i++) {
 					gfx.showPoint(geometry.vertices[i], color, opacity);
 				}
@@ -204,6 +202,13 @@
 					gfx.showPoint(origin, color);
 				}
 				return arrowHelper;
+			},
+			
+			updateArrow: function(arrow, origin, newDirection) {
+				let direction = gfx.createVector(origin, newDirection);
+				arrow.setDirection(direction);
+				arrow.setLength(direction.length()); // Why?
+				return arrow;
 			},
 
 			/* 	Inputs: pt - point in space to label, in the form of object with x, y, and z properties; label - text content for label; color - optional */

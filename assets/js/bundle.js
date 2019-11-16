@@ -23,9 +23,8 @@ module.exports = function () {
   var stats = new Stats();
   var blue = 0x0000ff;
   var draggable = [],
-      dragDelta = [],
       dragHandleGeometry = new THREE.BoxGeometry(2, 2, 2);
-  var triangle;
+  var triangle, geometry;
   return {
     settings: {
       defaultCameraLocation: {
@@ -58,6 +57,19 @@ module.exports = function () {
       gfx.setUpLights();
       gfx.setCameraLocation(camera, self.settings.defaultCameraLocation);
       self.setUpButtons();
+      self.initTriangle();
+      self.dragging();
+
+      var animate = function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+        controls.update();
+      };
+
+      animate();
+    },
+    initTriangle: function initTriangle() {
+      var self = this;
       var A = new THREE.Vector3(5, self.settings.zBuffer, 10),
           B = new THREE.Vector3(-10, self.settings.zBuffer, 5),
           C = new THREE.Vector3(10, self.settings.zBuffer, 0);
@@ -71,61 +83,42 @@ module.exports = function () {
       triangle.constraints.vectors.push(Va);
       triangle.constraints.vectors.push(Vb);
       triangle.constraints.vectors.push(Vc);
-      self.displayGeometries();
-      self.dragging();
-
-      var animate = function animate() {
-        requestAnimationFrame(animate);
-        renderer.render(scene, camera);
-        controls.update();
-      };
-
-      animate();
-    },
-    displayGeometries: function displayGeometries() {
-      var self = this;
-      var geometry = new THREE.Geometry();
+      geometry = new THREE.Geometry();
       geometry.vertices.push(triangle.a);
       geometry.vertices.push(triangle.b);
       geometry.vertices.push(triangle.c);
       geometry.faces.push(new THREE.Face3(0, 1, 2, triangle.getNormal(new THREE.Vector3(0, 0, 0))));
+      var mesh = new THREE.Mesh(geometry, faceMaterial);
+      scene.add(mesh);
       triangle.arrows = [];
       var label = ['A', 'B', 'C'];
       var vertices = [triangle.a, triangle.b, triangle.c];
 
       for (var i = 0; i < triangle.constraints.vectors.length; i++) {
-        triangle.arrows[i] = gfx.showVector(triangle.constraints.vectors[i], vertices[i], blue);
+        if (!triangle.arrows[i]) triangle.arrows[i] = gfx.showVector(triangle.constraints.vectors[i], vertices[i], blue);
         gfx.labelPoint(gfx.movePoint(vertices[i], triangle.constraints.vectors[i]).multiplyScalar(1.05), 'V' + label[i].toLowerCase(), blue);
         gfx.labelPoint(gfx.movePoint(vertices[i], new THREE.Vector3(-.25, .5, 1)), label[i], 0x00ff00);
-        triangle.constraints.dragHandles[i] = new THREE.Mesh(dragHandleGeometry, invisibleMaterial).clone();
+        triangle.constraints.dragHandles[i] = new THREE.Mesh(dragHandleGeometry, invisibleMaterial);
         var newPos = gfx.movePoint(vertices[i], triangle.constraints.vectors[i].setLength(triangle.constraints.vectors[i].length() - 1));
         triangle.constraints.dragHandles[i].position.set(newPos.x, newPos.y, newPos.z);
         scene.add(triangle.constraints.dragHandles[i]);
-
-        if (draggable.length !== triangle.constraints.vectors.length) {
-          draggable.push(triangle.constraints.dragHandles[i]);
-          console.log(draggable.length);
-        }
+        draggable.push(triangle.constraints.dragHandles[i]);
       }
 
-      var mesh = new THREE.Mesh(geometry, faceMaterial);
-      scene.add(mesh);
       self.trianglePointCloud(triangle);
     },
     updateObjects: function updateObjects(draggedObject) {
+      var self = this;
       var vertices = [triangle.a, triangle.b, triangle.c];
 
       for (var i = 0; i < triangle.constraints.vectors.length; i++) {
-        // Only update if draggedObject is the same as the corresponding drag handle. Something is delete and making new drag handles.
-        console.log(i, triangle.constraints.dragHandles[i] === draggedObject, triangle.constraints.dragHandles[i], draggedObject);
-
         if (triangle.constraints.dragHandles[i] === draggedObject) {
-          console.log('match');
-          scene.remove(triangle.arrows[i]);
-          triangle.constraints.vectors[i] = new THREE.Vector3(dragDelta[1].x - vertices[i].x, dragDelta[1].y - vertices[i].y, dragDelta[1].z - vertices[i].z);
-          triangle.arrows[i] = gfx.showVector(triangle.constraints.vectors[i], vertices[i]);
+          triangle.constraints.vectors[i] = new THREE.Vector3(draggedObject.position.x - vertices[i].x, draggedObject.position.y - vertices[i].y, draggedObject.position.z - vertices[i].z);
+          gfx.updateArrow(triangle.arrows[i], vertices[i], draggedObject.position);
         }
       }
+
+      self.updateField(triangle);
     },
     barycentricVectorInField: function barycentricVectorInField(pt, triangle) {
       var bary = new THREE.Vector3(0, 0, 0);
@@ -139,15 +132,9 @@ module.exports = function () {
       dragControls.addEventListener('dragstart', function (event) {
         count = 0;
         controls.enabled = false;
-        if (event.object) dragDelta[0] = event.object.position;
       });
       dragControls.addEventListener('drag', function (event) {
-        if (event.object) dragDelta[1] = event.object.position;
-        self.updateObjects(event.object); //if (count % 4 === 0) {
-        //	self.reset();
-        //	self.displayGeometries();
-        //}
-
+        self.updateObjects(event.object);
         count++;
       });
       dragControls.addEventListener('dragend', function (event) {
@@ -163,6 +150,7 @@ module.exports = function () {
       var density = 1;
       var origin = new THREE.Vector3(0, 0, 0);
       gfx.showPoint(origin, new THREE.Color('purple'));
+      triangle.field = [];
 
       for (var x = rangeX[0]; x <= rangeX[1]; x += density) {
         for (var z = rangeZ[0]; z <= rangeZ[1]; z += density) {
@@ -170,9 +158,21 @@ module.exports = function () {
 
           if (gfx.pointInFace(vectorOrigin, triangle)) {
             gfx.labelPoint(origin, 'O', new THREE.Color('purple'));
-            gfx.showVector(self.barycentricVectorInField(vectorOrigin, triangle), vectorOrigin);
+            triangle.field.push({
+              'arrow': gfx.showVector(self.barycentricVectorInField(vectorOrigin, triangle), vectorOrigin),
+              'origin': vectorOrigin
+            });
           }
         }
+      }
+    },
+    updateField: function updateField(triangle) {
+      var self = this;
+      var vertices = [triangle.a, triangle.b, triangle.c];
+
+      for (var i = 0; i < triangle.field.length; i++) {
+        var origin = triangle.field[i].origin;
+        gfx.updateArrow(triangle.field[i].arrow, origin, self.barycentricVectorInField(origin, triangle));
       }
     },
     pointCloud: function pointCloud() {
@@ -204,7 +204,6 @@ module.exports = function () {
       var result = new THREE.Vector3(-pt.z, 0, pt.x);
       return result;
     },
-    update: function update() {},
     reset: function reset() {
       // for (let i = scene.children.length - 1; i >= 0; i--) {
       // 	let obj = scene.children[i];
@@ -242,7 +241,7 @@ module.exports = function () {
 
       window.addEventListener('mousemove', onMouseMove, false);
       document.querySelector('canvas').addEventListener('click', function (event) {
-        self.reset(); //self.displayGeometries();
+        self.reset(); //self.updateField();
       });
     }
   };
@@ -389,8 +388,6 @@ module.exports = function () {
         return camera;
       },
       showPoints: function showPoints(geometry, color, opacity) {
-        var self = this;
-
         for (var i = 0; i < geometry.vertices.length; i++) {
           gfx.showPoint(geometry.vertices[i], color, opacity);
         }
@@ -423,6 +420,13 @@ module.exports = function () {
         }
 
         return arrowHelper;
+      },
+      updateArrow: function updateArrow(arrow, origin, newDirection) {
+        var direction = gfx.createVector(origin, newDirection);
+        arrow.setDirection(direction);
+        arrow.setLength(direction.length()); // Why?
+
+        return arrow;
       },
 
       /* 	Inputs: pt - point in space to label, in the form of object with x, y, and z properties; label - text content for label; color - optional */
