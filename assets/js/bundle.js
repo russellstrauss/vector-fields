@@ -84,6 +84,8 @@ module.exports = function () {
       triangles.push(new THREE.Triangle(A, B, C));
       A = new THREE.Vector3(10, settings.zBuffer, -20), B = new THREE.Vector3(-10, settings.zBuffer, 5), C = new THREE.Vector3(10, settings.zBuffer, 1);
       triangles.push(new THREE.Triangle(A, B, C));
+      A = new THREE.Vector3(10, settings.zBuffer, -20), B = new THREE.Vector3(30, settings.zBuffer, -5), C = new THREE.Vector3(10, settings.zBuffer, 1);
+      triangles.push(new THREE.Triangle(A, B, C));
 
       for (var tri = 0; tri < triangles.length; tri += 1) {
         triangles[tri].constraints = {};
@@ -116,28 +118,37 @@ module.exports = function () {
           draggable.push(triangles[tri].constraints.dragHandles[i]);
         }
 
-        self.trianglePointCloud(triangles[tri]); //console.log('triangle passed to cloud: ', triangles[tri]);
-      } //self.trianglePointCloud(triangles[1]);
-
+        self.trianglePointCloud(triangles[tri]);
+      }
     },
     updateObjects: function updateObjects(draggedObject) {
       var self = this;
-      var vertices = [triangle.a, triangle.b, triangle.c];
+      var updateTriangle = null;
+      triangles.forEach(function (triangle) {
+        // identify the triangle that is associated with the handle being dragging and update that triangle
+        triangle.constraints.dragHandles.forEach(function (handle) {
+          if (draggedObject === handle) updateTriangle = triangle;
+        });
+      });
 
-      for (var i = 0; i < triangle.constraints.vectors.length; i++) {
-        if (triangle.constraints.dragHandles[i] === draggedObject) {
-          // update stuff when dragging handles
-          var originalLength = triangle.constraints.vectors[i].length();
-          triangle.constraints.vectors[i] = new THREE.Vector3(draggedObject.position.x - vertices[i].x, 0, draggedObject.position.z - vertices[i].z);
-          var newDirection = new THREE.Vector3(draggedObject.position.x, 0, draggedObject.position.z);
-          var newOrigin = new THREE.Vector3(vertices[i].x, 0, vertices[i].z);
-          gfx.updateArrow(triangle.arrows[i], newOrigin, newDirection);
-          var scale = newDirection.length() * .1;
-          triangle.constraints.dragHandles[i].scale.x = scale, triangle.constraints.dragHandles[i].scale.y = scale, triangle.constraints.dragHandles[i].scale.z = scale;
+      if (updateTriangle) {
+        var vertices = [updateTriangle.a, updateTriangle.b, updateTriangle.c];
+
+        for (var i = 0; i < updateTriangle.constraints.vectors.length; i++) {
+          if (updateTriangle.constraints.dragHandles[i] === draggedObject) {
+            // update stuff when dragging handles
+            var originalLength = updateTriangle.constraints.vectors[i].length();
+            updateTriangle.constraints.vectors[i] = new THREE.Vector3(draggedObject.position.x - vertices[i].x, 0, draggedObject.position.z - vertices[i].z);
+            var newDirection = new THREE.Vector3(draggedObject.position.x, 0, draggedObject.position.z);
+            var newOrigin = new THREE.Vector3(vertices[i].x, 0, vertices[i].z);
+            gfx.updateArrow(updateTriangle.arrows[i], newOrigin, newDirection);
+            var scale = newDirection.length() * .1;
+            updateTriangle.constraints.dragHandles[i].scale.x = scale, updateTriangle.constraints.dragHandles[i].scale.y = scale, updateTriangle.constraints.dragHandles[i].scale.z = scale;
+          }
         }
-      }
 
-      self.updateField(triangle);
+        self.updateField(updateTriangle);
+      }
     },
     barycentricVectorInField: function barycentricVectorInField(pt, triangle) {
       var bary = new THREE.Vector3(0, 0, 0);
