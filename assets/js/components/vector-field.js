@@ -2,6 +2,8 @@ THREE.DragControls = require('three-dragcontrols');
 
 module.exports = function() {
 	
+	let message = document.querySelector('.message');
+	
 	var settings = {
 		defaultCameraLocation: {
 			x: 0,
@@ -118,6 +120,7 @@ module.exports = function() {
 					draggable.push(triangles[tri].constraints.dragHandles[i]);
 				}
 				self.trianglePointCloud(triangles[tri]);
+				self.pointCloud();
 			}
 		},
 		
@@ -217,13 +220,13 @@ module.exports = function() {
 			}
 		},
 		
-		pointCloud: function() {
+		pointCloud: function(id) {
 			
 			let self = this;
 			let y = settings.zBuffer;
 			
-			let range = [-settings.floorSize / 2, settings.floorSize / 2];
-			let density = 10;
+			let range = [-10, 10];
+			let density = 3;
 			
 			for (let x = range[0]; x <= range[1]; x += density) {
 				
@@ -232,26 +235,45 @@ module.exports = function() {
 					for (let z = range[0]; z <= range[1]; z += density) {
 						
 						let vectorOrigin = new THREE.Vector3(x, y, z);
-						let origin = new THREE.Vector3(0, 0, 0);
-						gfx.showPoint(origin, 0x00ff00);
-						gfx.labelPoint(gfx.movePoint(origin, new THREE.Vector3(.25, 0, -.25)), 'O', new THREE.Color('white'));
-						
-						gfx.showVector(self.vectorInField(vectorOrigin), vectorOrigin);
+						if (id === 1) gfx.showVector(self.vectorInField1(vectorOrigin), vectorOrigin);
+						if (id === 2) gfx.showVector(self.vectorInField2(vectorOrigin), vectorOrigin);
+						if (id === 3) gfx.showVector(self.vectorInField3(vectorOrigin), vectorOrigin);
+						if (id === 4) gfx.showVector(self.vectorInField4(vectorOrigin), vectorOrigin);
 					}
 				}
 			}
 		},
 		
-		vectorInField: function(pt) {
+		vectorInField1: function(pt) {
 			
-			//field F = (−y, xy, z);
-			//let result = new THREE.Vector3(-pt.y, pt.x * pt.y, pt.z);
+			message.innerHTML = 'F = xi&#770 + yj&#770';
 			
+			// field F = (x, 0, z);
+			let result = new THREE.Vector3(pt.x, 0, pt.z);
+			return result;
+		},
+		
+		vectorInField2: function(pt) {
+			
+			message.innerHTML = 'F = xi&#770';
+
 			// field F = xi
-			//let result = new THREE.Vector3(pt.x, 0, 0);
+			let result = new THREE.Vector3(pt.x, 0, 0);
+			return result;
+		},
+		
+		vectorInField3: function(pt) {
+			
+			message.innerHTML = 'F = xi&#770 + zk&#770';
 			
 			// field F = xi + zk
-			//let result =  new THREE.Vector3(pt.x + pt.z, 0, pt.x + pt.z);
+			let result =  new THREE.Vector3(pt.x + pt.z, 0, pt.x + pt.z);
+			return result;
+		},
+		
+		vectorInField4: function(pt) {
+			
+			message.innerHTML = 'F = -zi&#770 + xk&#770';
 			
 			// field F = -zi + xk
 			let result =  new THREE.Vector3(-pt.z, 0, pt.x);
@@ -260,11 +282,13 @@ module.exports = function() {
 		
 		reset: function() {
 			
-			// for (let i = scene.children.length - 1; i >= 0; i--) {
-			// 	let obj = scene.children[i];
+			message.textContent = '';
+			
+			for (let i = scene.children.length - 1; i >= 0; i--) {
+				let obj = scene.children[i];
 				
-			// 	if (!draggable.includes(obj)) scene.remove(obj);
-			// }
+				if (!draggable.includes(obj)) scene.remove(obj);
+			}
 			
 			floor = gfx.addFloor(settings.floorSize, settings.colors.worldColor, settings.colors.gridColor);
 		},
@@ -294,9 +318,6 @@ module.exports = function() {
 			let self = this;
 			let message = document.getElementById('message');
 			
-			let esc = 27;
-			let A = 65;
-			
 			let onMouseMove = function(event) {
 
 				mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -306,6 +327,36 @@ module.exports = function() {
 			
 			document.querySelector('canvas').addEventListener('click', function(event) {
 
+			});
+			
+			document.addEventListener('keyup', function(event) {
+				
+				let one = 49;
+				let two = 50;
+				let three = 51;
+				let four = 52;
+				let r = 82;
+				
+				if (event.keyCode === one) {
+					self.reset();
+					self.pointCloud(1);
+				}
+				if (event.keyCode === two) {
+					self.reset();
+					self.pointCloud(2);
+				}
+				if (event.keyCode === three) {
+					self.reset();
+					self.pointCloud(3);
+				}
+				if (event.keyCode === four) {
+					self.reset();
+					self.pointCloud(4);
+				}
+				if (event.keyCode === r) {
+					self.reset();
+					//self.initTriangle();
+				}
 			});
 		}
 	}
