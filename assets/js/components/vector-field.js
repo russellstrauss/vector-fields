@@ -158,6 +158,7 @@ module.exports = function() {
 		barycentricVectorInField: function(pt, triangle) {
 			let bary = new THREE.Vector3(0, 0, 0);
 			bary = triangle.getBarycoord(pt, bary);
+			console.log(bary);
 			return gfx.addVectors(triangle.constraints.vectors[0].clone().multiplyScalar(bary.x), triangle.constraints.vectors[1].clone().multiplyScalar(bary.y), triangle.constraints.vectors[2].clone().multiplyScalar(bary.z));
 		},
 		
@@ -246,7 +247,7 @@ module.exports = function() {
 		
 		vectorInField1: function(pt) {
 			
-			message.innerHTML = 'F = xi&#770 + yj&#770';
+			message.innerHTML = 'F = xi&#770 + zk&#770';
 			
 			// field F = (x, 0, z);
 			let result = new THREE.Vector3(pt.x, 0, pt.z);
