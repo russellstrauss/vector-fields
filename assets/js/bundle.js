@@ -155,6 +155,7 @@ module.exports = function () {
     barycentricVectorInField: function barycentricVectorInField(pt, triangle) {
       var bary = new THREE.Vector3(0, 0, 0);
       bary = triangle.getBarycoord(pt, bary);
+      console.log(bary);
       return gfx.addVectors(triangle.constraints.vectors[0].clone().multiplyScalar(bary.x), triangle.constraints.vectors[1].clone().multiplyScalar(bary.y), triangle.constraints.vectors[2].clone().multiplyScalar(bary.z));
     },
     dragging: function dragging() {
