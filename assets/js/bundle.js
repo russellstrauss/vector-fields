@@ -233,7 +233,7 @@ module.exports = function () {
       }
     },
     vectorInField1: function vectorInField1(pt) {
-      message.innerHTML = 'F = xi&#770 + yj&#770'; // field F = (x, 0, z);
+      message.innerHTML = 'F = xi&#770 + zk&#770'; // field F = (x, 0, z);
 
       var result = new THREE.Vector3(pt.x, 0, pt.z);
       return result;

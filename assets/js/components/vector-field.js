@@ -246,7 +246,7 @@ module.exports = function() {
 		
 		vectorInField1: function(pt) {
 			
-			message.innerHTML = 'F = xi&#770 + yj&#770';
+			message.innerHTML = 'F = xi&#770 + zk&#770';
 			
 			// field F = (x, 0, z);
 			let result = new THREE.Vector3(pt.x, 0, pt.z);
