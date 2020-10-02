@@ -1,7 +1,3 @@
-/**
- * @author sunag / http://www.sunag.com.br/
- */
-
 import {
 	LinearFilter,
 	Mesh,
@@ -23,8 +19,7 @@ function NodePostProcessing( renderer, renderTarget ) {
 		var parameters = {
 			minFilter: LinearFilter,
 			magFilter: LinearFilter,
-			format: RGBAFormat,
-			stencilBuffer: false
+			format: RGBAFormat
 		};
 
 		var size = renderer.getDrawingBufferSize( new Vector2() );
@@ -85,9 +80,21 @@ NodePostProcessing.prototype = {
 
 	},
 
+	setPixelRatio: function ( value ) {
+
+		this.renderer.setPixelRatio( value );
+
+		var size = this.renderer.getSize( new Vector2() );
+
+		this.setSize( size.width, size.height );
+
+	},
+
 	setSize: function ( width, height ) {
 
-		this.renderTarget.setSize( width, height );
+		var pixelRatio = this.renderer.getPixelRatio();
+
+		this.renderTarget.setSize( width * pixelRatio, height * pixelRatio );
 
 		this.renderer.setSize( width, height );
 

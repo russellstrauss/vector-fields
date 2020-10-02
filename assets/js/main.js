@@ -1,4 +1,4 @@
-var VectorField = require('./components/vector-field.js');
+var PointCloud = require('./components/point-cloud.js');
 var Utilities = require('./utils.js');
 var Graphics = require('./graphics.js');
 
@@ -6,6 +6,6 @@ var Graphics = require('./graphics.js');
 	
 	document.addEventListener('DOMContentLoaded',function(){
 
-		VectorField().init();
+		PointCloud().init();
 	});
 })();
