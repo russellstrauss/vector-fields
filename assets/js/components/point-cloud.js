@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 THREE.DragControls = require('three-dragcontrols');
 
 module.exports = function() {
@@ -29,7 +31,7 @@ module.exports = function() {
 	var invisibleMaterial = new THREE.MeshNormalMaterial({ transparent: true, opacity: 0 });
 	var greenMaterial = new THREE.MeshBasicMaterial({ color: green });
 	var mouse = new THREE.Vector2();
-	var stats = new Stats();
+	//var stats = new Stats();
 	var blue = 0x0000ff;
 	var draggable = [], dragHandleGeometry = new THREE.BoxGeometry(settings.dragHandleSize, settings.dragHandleSize, settings.dragHandleSize);
 	var triangle, geometry;
